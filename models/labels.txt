@@ -1,0 +1,6 @@
+0 cup
+1 book
+2 phone
+3 pen
+4 keys
+5 remote
