@@ -1,9 +1,27 @@
 # utils/tflite_detector.py
-import tensorflow as tf
 import numpy as np
 from PIL import Image
 import cv2
 import os
+import platform
+
+# Try to import TFLite runtime
+try:
+    # First try the full tensorflow (if installed)
+    import tensorflow as tf
+
+    interpreter_func = tf.lite.Interpreter
+    print("✅ Using TensorFlow Lite")
+except:
+    try:
+        # Then try tflite-runtime
+        import tflite_runtime.interpreter as tflite
+
+        interpreter_func = tflite.Interpreter
+        print("✅ Using tflite-runtime")
+    except:
+        print("❌ No TFLite library found")
+        interpreter_func = None
 
 
 class TFLiteDetector:
@@ -39,20 +57,25 @@ class TFLiteDetector:
         try:
             # Load TFLite model
             print("🔄 Loading TFLite model...")
-            self.interpreter = tf.lite.Interpreter(model_path=str(self.model_path))
-            self.interpreter.allocate_tensors()
+            if interpreter_func:
+                self.interpreter = interpreter_func(model_path=str(self.model_path))
+                self.interpreter.allocate_tensors()
 
-            # Get input and output details
-            self.input_details = self.interpreter.get_input_details()
-            self.output_details = self.interpreter.get_output_details()
+                # Get input and output details
+                self.input_details = self.interpreter.get_input_details()
+                self.output_details = self.interpreter.get_output_details()
 
-            print(f"✅ Model loaded successfully!")
-            print(f"📊 Input shape: {self.input_details[0]['shape']}")
-            print(f"📊 Output shape: {self.output_details[0]['shape']}")
+                print(f"✅ Model loaded successfully!")
+                print(f"📊 Input shape: {self.input_details[0]['shape']}")
+                print(f"📊 Output shape: {self.output_details[0]['shape']}")
 
-            # Get expected input size
-            self.input_height = self.input_details[0]['shape'][1]
-            self.input_width = self.input_details[0]['shape'][2]
+                # Get expected input size
+                self.input_height = self.input_details[0]['shape'][1]
+                self.input_width = self.input_details[0]['shape'][2]
+            else:
+                print("❌ No TFLite interpreter available")
+                self.interpreter = None
+                return
 
             # Load labels
             with open(self.labels_path, 'r') as f:
